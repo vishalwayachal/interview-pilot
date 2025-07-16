@@ -4,7 +4,7 @@
     <div class="alert alert-info mb-4">
       <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between">
         <span>The following settings are only retained locally in your browser.</span>
-        <span>See <a :href="github_url" target="_blank">Github</a> for setup instructions.</span>
+       
       </div>
     </div>
 
@@ -15,7 +15,6 @@
             <h2 class="mb-0">Open AI</h2>
           </div>
           <div class="card-body">
-            <div class="mb-3 text-muted small">To use GPT, you need an API Key from the <a :href="open_ai_api_url" target="_blank">Open AI</a></div>
             <div class="mb-3">
               <label class="form-label fw-bold">API Key</label>
               <el-input class="form-control" placeholder="sk-xxxx" v-model="openai_key" @change="onKeyChange('openai_key')" />
@@ -44,10 +43,7 @@
             <h2 class="mb-0">Azure Speech Recognition</h2>
           </div>
           <div class="card-body">
-            <div class="mb-3 text-muted small">
-              We use Microsoft Azure's speech recognition service. You can apply for a free Azure token by referring to <a
-                :href="azure_application_url" target="_blank">this tutorial</a>:
-            </div>
+           
             <div class="mb-3">
               <label class="form-label fw-bold">Azure token</label>
               <el-input class="form-control" placeholder="Input Your Azure Speech Resource Token (KEY 1)" v-model="azure_token"
@@ -61,11 +57,7 @@
               <label class="form-label fw-bold">Recognition Language</label>
               <el-input class="form-control" placeholder="e.g. en-US" v-model="azure_language" @change="onKeyChange('azure_language')" />
             </div>
-            <div class="desc_text">
-              <span style="text-decoration: gray">zh-CN</span> for Chinese, See <a :href="full_language_codec_url"
-                                                                                   target="_blank">here</a> for
-              other language codes
-            </div>
+           
           </div>
         </div>
       </div>
