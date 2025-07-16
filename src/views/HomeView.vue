@@ -1,25 +1,41 @@
 <template>
   <div class="homeview_container">
     <div class="center_container">
-      <div class="box asr_box" >
+      <div class="box asr_box sticky-asr">
         <div class="func_desc">
           <i class="el-icon-microphone"></i>
-          <span>Speech Recognition Results</span>
+          <span>Speech Recognition</span>
         </div>
         <div v-if="!currentText" class="no-content" style="display: none">
           No Content
         </div>
-        <div class="mb-2">
-          <label for="topic-select" class="form-label fw-bold">Select Topic:</label>
-          <select id="topic-select" v-model="selectedTopic" class="form-select">
-            <option value="general">General</option>
-            <option value="nodejs">Node.js</option>
-            <option value="vuejs">Vue.js</option>
-            <option value="php">PHP</option>
-            <option value="python">Python</option>
-            <option value="postgresql">PostgreSQL</option>
-            <option value="mongo">MongoDB</option>
-          </select>
+        <div class="mb-2 d-flex align-items-center gap-3 flex-wrap">
+          <div class="flex-grow-1">
+            <select
+              id="topic-select"
+              v-model="selectedTopic"
+              class="form-select"
+            >
+              <option value="general">General</option>
+              <option value="nodejs">Node.js</option>
+              <option value="vuejs">Vue.js</option>
+              <option value="php">PHP</option>
+              <option value="python">Python</option>
+              <option value="postgresql">PostgreSQL</option>
+              <option value="mongo">MongoDB</option>
+            </select>
+          </div>
+          <div class="form-check form-switch mb-0">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="auto-submit-toggle"
+              v-model="autoSubmitSpeech"
+            />
+            <label class="form-check-label" for="auto-submit-toggle">
+              Auto-submit
+            </label>
+          </div>
         </div>
         <textarea
           v-model="currentText"
@@ -35,7 +51,7 @@
         >
           {{ currentText }}
         </div>
-            <div class="single_part_bottom_bar">
+        <div class="single_part_bottom_bar">
           <el-button
             icon="el-icon-thumb"
             @click="askCurrentText"
@@ -43,10 +59,8 @@
             type="primary"
             plain
           >
-            Ask GPT
+            Ask
           </el-button>
-        </div>
-        <div class="single_part_bottom_bar">
           <el-button
             icon="el-icon-delete"
             :disabled="!currentText"
@@ -54,27 +68,26 @@
             type="danger"
             plain
           >
-            Clear Text
+            Clear
           </el-button>
-        </div>
-
-        <div class="single_part_bottom_bar">
           <el-button
             type="success"
+            icon="el-icon-mic"
             @click="startCopilot"
             v-show="state === 'end'"
             :loading="copilot_starting"
             :disabled="copilot_starting"
             class="main-action-btn"
-            >Start Copilot</el-button
+            >Start</el-button
           >
           <el-button
             type="warning"
+            icon="el-icon-stopwatch"
             :loading="copilot_stopping"
             @click="userStopCopilot"
             v-show="state === 'ing'"
             class="main-action-btn"
-            >Stop Copilot</el-button
+            >Stop</el-button
           >
           <MyTimer ref="MyTimer" />
         </div>
@@ -92,7 +105,6 @@
         >
           {{ ai_result }}
         </div>
-    
       </div>
     </div>
   </div>
@@ -130,18 +142,18 @@ export default {
       show_ai_thinking_effect: false,
       popStyle: {},
       selectedTopic: "general",
+      autoSubmitSpeech: false,
     };
   },
   async mounted() {
     console.log("STARTED----");
-  
   },
   beforeDestroy() {},
   methods: {
     async askCurrentText() {
       const apiKey = localStorage.getItem("openai_key");
-     
-      if(this.selectedTopic != "general") {
+
+      if (this.selectedTopic != "general") {
         this.currentText = `[${this.selectedTopic}] ` + this.currentText;
       }
       let content = this.currentText;
@@ -190,13 +202,16 @@ export default {
       const openai_key = localStorage.getItem("openai_key");
       console.log({ region, language });
 
-
       // Check for mediaDevices and getUserMedia support
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         if (this.$message) {
-          this.$message.error("Your browser does not support microphone access. Please use a modern browser and ensure the page is served over HTTPS.");
+          this.$message.error(
+            "Your browser does not support microphone access. Please use a modern browser and ensure the page is served over HTTPS."
+          );
         } else {
-          alert("Your browser does not support microphone access. Please use a modern browser and ensure the page is served over HTTPS.");
+          alert(
+            "Your browser does not support microphone access. Please use a modern browser and ensure the page is served over HTTPS."
+          );
         }
         this.copilot_starting = false;
         return;
@@ -207,9 +222,13 @@ export default {
         await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (err) {
         if (this.$message) {
-          this.$message.error("Microphone permission denied or unavailable. Please allow microphone access in your browser settings.");
+          this.$message.error(
+            "Microphone permission denied or unavailable. Please allow microphone access in your browser settings."
+          );
         } else {
-          alert("Microphone permission denied or unavailable. Please allow microphone access in your browser settings.");
+          alert(
+            "Microphone permission denied or unavailable. Please allow microphone access in your browser settings."
+          );
         }
         this.copilot_starting = false;
         return;
@@ -238,7 +257,7 @@ export default {
         );
       } catch (e) {
         console.error("Error starting copilot:", e);
-        this.currentText = "Start Failed: " + e;
+        this.$message.error("Start Failed: " + e);
         this.copilot_starting = false;
         return;
       }
@@ -253,9 +272,10 @@ export default {
         ) {
           const text = event.result.text;
           this.currentText = this.currentText + "\n" + text;
-          // If voice pilot is started, currentText exists, and question is completed (ends with '?'), execute askCurrentText
+          // If autoSubmitSpeech is ON, voice pilot is started, currentText exists, and question is completed (ends with '?'), execute askCurrentText
           if (
-            this.state === 'ing' &&
+            this.autoSubmitSpeech &&
+            this.state === "ing" &&
             this.currentText &&
             /[\?？]\s*$/.test(this.currentText.trim())
           ) {
@@ -275,7 +295,7 @@ export default {
         },
         (err) => {
           this.copilot_starting = false;
-          this.currentText = "Start Failed:" + err;
+          this.$message.error("Start Failed:" + err);
           window.console.error("recogniton start failed", err);
         }
       );
@@ -316,7 +336,21 @@ async function sleep(ms) {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-@import 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css';
+/* Sticky ASR section for mobile */
+.sticky-asr {
+  position: static;
+}
+
+@media (max-width: 600px) {
+  .sticky-asr {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #fff;
+    box-shadow: 0 2px 8px 0 rgba(60, 80, 120, 0.07);
+  }
+}
+@import "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css";
 
 .homeview_container {
   min-height: 100vh;
@@ -339,13 +373,13 @@ async function sleep(ms) {
   background: #fff;
   border-radius: 1rem;
   box-shadow: 0 2px 16px 0 rgba(60, 80, 120, 0.07);
-  padding: 1.5rem 1.2rem 1rem 1.2rem;
+  padding: 1rem 1.2rem 0.75rem 1.2rem;
   min-width: 320px;
   max-width: 420px;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
   border: 1px solid #dee2e6;
 }
 
@@ -371,14 +405,14 @@ async function sleep(ms) {
 
 .asr_input {
   width: 100%;
-  min-height: 40px;
+  min-height: 36px;
   max-height: 100px;
   resize: vertical;
   font-size: 1rem;
-  font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+  font-family: "JetBrains Mono", "Courier New", Courier, monospace;
   border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.25rem;
   background: #f8f9fa;
   border: 1px solid #ced4da;
   transition: border 0.2s;
@@ -392,9 +426,9 @@ async function sleep(ms) {
 .preview_content {
   background: #f4f7fa;
   border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.5rem;
-  min-height: 24px;
+  padding: 0.35rem 0.6rem;
+  margin-bottom: 0.25rem;
+  min-height: 20px;
   font-size: 1rem;
   color: #2d3748;
   white-space: pre-wrap;
@@ -407,59 +441,62 @@ async function sleep(ms) {
   flex-grow: 1;
   min-height: 40px;
   margin-bottom: 0.5rem;
-  font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+  font-family: "JetBrains Mono", "Courier New", Courier, monospace;
   font-size: 1rem;
   color: #2d3748;
   transition: background 0.2s;
 }
 .ai_result_content.thinking {
-  background: repeating-linear-gradient(135deg, #e3eaf6, #e3eaf6 10px, #f4f7fa 10px, #f4f7fa 20px);
+  background: repeating-linear-gradient(
+    135deg,
+    #e3eaf6,
+    #e3eaf6 10px,
+    #f4f7fa 10px,
+    #f4f7fa 20px
+  );
   opacity: 0.8;
 }
 
 .single_part_bottom_bar {
   display: flex;
-  gap: 0;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
   margin-top: 0;
-  flex-wrap: wrap;
+  width: 100%;
+  margin-bottom: 0;
 }
-.single_part_bottom_bar > .el-button, .single_part_bottom_bar > button {
+.single_part_bottom_bar > .el-button,
+.single_part_bottom_bar > button {
   flex: 1 1 0;
   font-size: 1rem;
   border-radius: 0.5rem;
   padding: 0.5rem 0;
   min-width: 0;
   margin: 0;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
   .center_container {
     flex-direction: column;
-    gap: 1.2rem;
+    gap: 0.7rem;
     align-items: stretch;
-    padding: 1rem 0;
+    padding: 0.5rem 0;
   }
   .box {
     min-width: 0;
     max-width: 100vw;
     width: 100%;
-    margin: 0 0 1.2rem 0;
-    padding: 1rem 0.5rem 0.5rem 0.5rem;
+    margin: 0 0 0.7rem 0;
+    padding: 0.7rem 0.5rem 0.3rem 0.5rem;
     border-radius: 0.75rem;
     font-size: 1em;
+    gap: 0.3rem;
   }
   .asr_box,
   .gpt_box {
-    margin: 0;
-  }
-  .single_part_bottom_bar {
-    flex-direction: column;
-    gap: 0;
-    margin-top: 0;
-  }
-  .single_part_bottom_bar > .el-button, .single_part_bottom_bar > button {
-    width: 100%;
-    min-width: 0;
     margin: 0;
   }
 }
@@ -471,43 +508,53 @@ async function sleep(ms) {
     max-width: 100vw;
   }
   .center_container {
-    gap: 0.5rem;
+    gap: 0.3rem;
     min-width: 0;
     width: 100%;
-    padding: 0.5rem 0;
+    padding: 0.3rem 0;
   }
   .box {
-    padding: 0.5rem 1vw 0.5rem 1vw;
-    font-size: 0.97em;
+    padding: 0.3rem 1vw 0.3rem 1vw;
+    font-size: 1.05em;
     min-width: 0;
     max-width: 100vw;
     width: 100%;
+    gap: 0.2rem;
   }
   .func_desc {
-    font-size: 0.97em;
-    margin-bottom: 0.5rem;
+    font-size: 1.08em;
+    margin-bottom: 0.3rem;
   }
   .asr_input,
   .preview_content,
   .ai_result_content {
-    font-size: 0.97em;
-    padding: 0.5rem 0.25rem;
+    font-size: 1.08em;
+    padding: 0.3rem 0.15rem;
   }
   .main-action-btn {
-    min-width: 70px;
-    font-size: 0.97em;
-    padding: 0.5rem 0;
+    min-width: 60px;
+    font-size: 1.08em;
+    padding: 0.3rem 0;
     border-radius: 0.5rem;
   }
+  /* Show all action buttons in one row on mobile */
   .single_part_bottom_bar {
-    flex-direction: column;
-    gap: 0;
+    flex-direction: row !important;
+    gap: 0.5rem;
     margin-top: 0;
+    justify-content: stretch;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 0;
   }
-  .single_part_bottom_bar > .el-button, .single_part_bottom_bar > button {
+  .single_part_bottom_bar > .el-button,
+  .single_part_bottom_bar > button {
     width: 100%;
     min-width: 0;
     margin: 0;
+    font-size: 1.08em;
+    flex: 1 1 0;
+    text-align: center;
   }
 }
 </style>
