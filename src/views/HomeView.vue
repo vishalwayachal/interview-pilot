@@ -84,6 +84,7 @@
           <i class="el-icon-s-custom"></i>
           <span>GPT Answer</span>
         </div>
+        <span>{{ lastQuestion }}</span>
         <LoadingIcon v-show="show_ai_thinking_effect" />
         <div
           class="ai_result_content preview_content"
@@ -121,6 +122,7 @@ export default {
   data() {
     return {
       currentText: " ",
+      lastQuestion: "",
       state: "end", //end\ing
       ai_result: null,
       copilot_starting: false, //显示loading
@@ -142,7 +144,8 @@ export default {
       if(this.selectedTopic != "general") {
         this.currentText = `[${this.selectedTopic}] ` + this.currentText;
       }
-      let content = `[${this.selectedTopic}] ` + this.currentText;
+      let content = this.currentText;
+      this.lastQuestion = content;
       this.ai_result = "";
       this.currentText = " ";
       this.show_ai_thinking_effect = true;
