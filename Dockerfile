@@ -2,7 +2,7 @@
 FROM node:18-alpine
 
 # Set the working directory inside the container
-WORKDIR /src
+WORKDIR /app
 
 # Copy package.json and package-lock.json first to leverage Docker layer caching
 COPY package*.json ./
@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Ensure all files have the correct permissions
-RUN chmod -R 755 /src
+RUN chmod -R 755 /app
 
 # Build the Next.js application
 RUN npm run build
@@ -23,4 +23,4 @@ RUN npm run build
 EXPOSE 8080
 
 # Define the command to start your app
-CMD ["npm", "start"]
+CMD ["npx", "serve", "-s", "dist", "-l", "8080"]
