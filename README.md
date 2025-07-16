@@ -33,10 +33,10 @@ You can also run this project using Docker:
 
 **Build the Docker image:**
 
-    docker build -t interview-assistant .
+    docker build -t interview-pilot .
 
 **Run the Docker container:**
 
-    docker run -p 8080:80 interview-assistant
+    docker run -p 8080:80 interview-pilot
 
 The app will be available at http://localhost:8080
