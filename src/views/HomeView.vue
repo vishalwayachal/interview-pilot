@@ -9,6 +9,18 @@
         <div v-if="!currentText" class="no-content" style="display: none">
           No Content
         </div>
+        <div class="mb-2">
+          <label for="topic-select" class="form-label fw-bold">Select Topic:</label>
+          <select id="topic-select" v-model="selectedTopic" class="form-select">
+            <option value="general">General</option>
+            <option value="nodejs">Node.js</option>
+            <option value="vuejs">Vue.js</option>
+            <option value="php">PHP</option>
+            <option value="python">Python</option>
+            <option value="postgresql">PostgreSQL</option>
+            <option value="mongo">MongoDB</option>
+          </select>
+        </div>
         <textarea
           v-model="currentText"
           rows="2"
@@ -115,6 +127,7 @@ export default {
       copilot_stopping: false,
       show_ai_thinking_effect: false,
       popStyle: {},
+      selectedTopic: "general",
     };
   },
   async mounted() {
@@ -125,7 +138,11 @@ export default {
   methods: {
     async askCurrentText() {
       const apiKey = localStorage.getItem("openai_key");
-      let content = this.currentText;
+     
+      if(this.selectedTopic != "general") {
+        this.currentText = `[${this.selectedTopic}] ` + this.currentText;
+      }
+      let content = `[${this.selectedTopic}] ` + this.currentText;
       this.ai_result = "";
       this.currentText = " ";
       this.show_ai_thinking_effect = true;
