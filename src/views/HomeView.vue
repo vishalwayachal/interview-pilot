@@ -162,13 +162,39 @@ export default {
       this.currentText = " ";
     },
     async startCopilot() {
-       this.currentText = " ";
+      this.currentText = " ";
       this.copilot_starting = true;
       const token = localStorage.getItem("azure_token");
       const region = config_util.azure_region();
       const language = config_util.azure_language();
       const openai_key = localStorage.getItem("openai_key");
       console.log({ region, language });
+
+
+      // Check for mediaDevices and getUserMedia support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (this.$message) {
+          this.$message.error("Your browser does not support microphone access. Please use a modern browser and ensure the page is served over HTTPS.");
+        } else {
+          alert("Your browser does not support microphone access. Please use a modern browser and ensure the page is served over HTTPS.");
+        }
+        this.copilot_starting = false;
+        return;
+      }
+
+      // Request microphone permission before initializing SpeechSDK
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        if (this.$message) {
+          this.$message.error("Microphone permission denied or unavailable. Please allow microphone access in your browser settings.");
+        } else {
+          alert("Microphone permission denied or unavailable. Please allow microphone access in your browser settings.");
+        }
+        this.copilot_starting = false;
+        return;
+      }
+
       try {
         if (!openai_key) {
           throw new Error("You should setup Open AI API Token");
@@ -192,7 +218,7 @@ export default {
         );
       } catch (e) {
         console.error("Error starting copilot:", e);
-        this.currentText = e;
+        this.currentText = "Start Failed: " + e;
         this.copilot_starting = false;
         return;
       }
