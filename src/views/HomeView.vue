@@ -100,7 +100,14 @@
             >Stop</el-button
           >
           <MyTimer ref="MyTimer" />
+      </div>
+      </div>
+        <div class="box video_box" v-if="tabVideoVisible">
+        <div class="func_desc">
+          <i class="el-icon-video-camera"></i>
+          <span>Tab Video Preview</span>
         </div>
+        <video ref="tabVideo" style="max-width: 100%; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(60,80,120,0.07);" autoplay muted playsinline></video>
       </div>
       <div class="box gpt_box">
         <div class="func_desc">
@@ -116,6 +123,7 @@
           {{ ai_result }}
         </div>
       </div>
+    
     </div>
   </div>
 </template>
@@ -153,6 +161,8 @@ export default {
       popStyle: {},
       selectedTopic: "general",
       autoSubmitSpeech: false,
+      tabVideoStream: null,
+      tabVideoVisible: false,
     };
   },
   async mounted() {
@@ -312,6 +322,11 @@ export default {
     },
     userStopCopilot() {
       this.copilot_stopping = true;
+      if (this.tabVideoStream) {
+        this.tabVideoStream.getTracks().forEach(track => track.stop());
+        this.tabVideoStream = null;
+        this.tabVideoVisible = false;
+      }
       this.recognizer.stopContinuousRecognitionAsync(
         () => {
           console.log("stoped");
@@ -325,19 +340,28 @@ export default {
       );
     },
     async startTabAudioCapture() {
-      // Prompt user to select a tab/window to capture audio from
+      // Prompt user to select a tab/window to capture audio and video from
       try {
-        // For best compatibility, request both video and audio
         const stream = await navigator.mediaDevices.getDisplayMedia({
-          video: true, // must be true for most browsers to allow tab audio
+          video: true,
           audio: { echoCancellation: false, noiseSuppression: false }
+        });
+        // Show video in the page
+        this.tabVideoStream = stream;
+        this.tabVideoVisible = true;
+        this.$nextTick(() => {
+          const videoEl = this.$refs.tabVideo;
+          if (videoEl) {
+            videoEl.srcObject = stream;
+            videoEl.play();
+          }
         });
         // Check for audio tracks
         const audioTracks = stream.getAudioTracks();
         if (!audioTracks.length) {
           this.$message.error("No audio track found in selected tab/window. Please ensure you select a tab or window with audio playing.");
-          // Stop all tracks to release resources
           stream.getTracks().forEach(track => track.stop());
+          this.tabVideoVisible = false;
           return;
         }
         // Only use the audio stream for speech recognition
@@ -348,6 +372,7 @@ export default {
         if (!token || !region) {
           this.$message.error("Azure token/region not set.");
           stream.getTracks().forEach(track => track.stop());
+          this.tabVideoVisible = false;
           return;
         }
         const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(token, region);
@@ -358,6 +383,7 @@ export default {
         } catch (e) {
           this.$message.error("Tab audio capture is not supported in this browser or by the Azure SDK. This feature requires browser and SDK support for MediaStream input.\nTry using a virtual audio cable or set your system audio as the microphone.\n\nTechnical details: " + (e && e.message ? e.message : e));
           stream.getTracks().forEach(track => track.stop());
+          this.tabVideoVisible = false;
           return;
         }
         this.recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
@@ -396,15 +422,16 @@ export default {
             this.$message.error("Tab Audio Start Failed:" + err);
             window.console.error("tab audio recognition start failed", err);
             stream.getTracks().forEach(track => track.stop());
+            this.tabVideoVisible = false;
           }
         );
       } catch (err) {
-        // Show a clear error message for unsupported scenarios
         let msg = "Tab audio capture failed: " + (err && err.message ? err.message : err);
         if (err && err.name === 'NotSupportedError') {
           msg += "\n\nYour browser does not support tab audio capture with getDisplayMedia. Try updating your browser, or use a different browser. If you need to capture system audio, consider using a virtual audio cable or set your system audio as the microphone.";
         }
         this.$message.error(msg);
+        this.tabVideoVisible = false;
       }
     },
   },
