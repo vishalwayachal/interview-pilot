@@ -300,16 +300,42 @@ export default {
       }
 
       const timeSinceLastRecognition = now - this.lastRecognitionTime;
+      const normalizedNewText = text.toLowerCase().trim();
+      const normalizedBuffer = this.recognitionBuffer.toLowerCase().trim();
       
-      // Improved continuation logic
-      if (timeSinceLastRecognition < 1500) {
-        // Check if we should add punctuation
-        let separator = " ";
-        if (!/[.!?]\s*$/.test(this.recognitionBuffer) && /^[A-Z]/.test(text)) {
-          separator = ". ";
+      // Check for duplicate or overlapping text
+      if (normalizedBuffer.includes(normalizedNewText) || 
+          normalizedNewText.includes(normalizedBuffer)) {
+        // If it's the same text or overlapping, use the longer one
+        this.recognitionBuffer = text.length > this.recognitionBuffer.length ? text : this.recognitionBuffer;
+      } else if (timeSinceLastRecognition < 1500) {
+        // Improved continuation logic with duplicate prevention
+        const words = text.split(' ');
+        const bufferWords = this.recognitionBuffer.split(' ');
+        
+        // Check for overlapping words at the end/beginning
+        let overlapCount = 0;
+        for (let i = 1; i <= 3 && i <= words.length; i++) {
+          const endPhrase = bufferWords.slice(-i).join(' ').toLowerCase();
+          const startPhrase = words.slice(0, i).join(' ').toLowerCase();
+          if (endPhrase === startPhrase) {
+            overlapCount = i;
+          }
         }
-        this.recognitionBuffer += separator + text;
+        
+        // Add new text with proper separation and overlap handling
+        if (overlapCount > 0) {
+          this.recognitionBuffer += ' ' + words.slice(overlapCount).join(' ');
+        } else {
+          // Check if we should add punctuation
+          let separator = " ";
+          if (!/[.!?]\s*$/.test(this.recognitionBuffer) && /^[A-Z]/.test(text)) {
+            separator = ". ";
+          }
+          this.recognitionBuffer += separator + text;
+        }
       } else {
+        // Start new sentence if enough time has passed
         this.recognitionBuffer = text;
       }
       
@@ -358,26 +384,62 @@ export default {
 
     processFinalResult(text, isAutoSubmit) {
       const timeSinceLastRecognition = Date.now() - this.lastRecognitionTime;
+      const currentText = text.trim();
+      const currentBuffer = this.recognitionBuffer.trim();
       
-      // Smart sentence combination logic
+      // Prevent duplicate sentences
+      if (currentBuffer.toLowerCase().includes(currentText.toLowerCase())) {
+        return; // Skip if the new text is already in the buffer
+      }
+      
+      // Advanced sentence combination logic
       if (timeSinceLastRecognition < 1500) {
-        // Check for sentence boundaries and proper continuation
-        const shouldAddPeriod = this.shouldAddPunctuation(this.recognitionBuffer, text);
-        const separator = shouldAddPeriod ? ". " : " ";
-        this.recognitionBuffer = this.recognitionBuffer.trim() + separator + text;
+        // Check for partial overlaps
+        const words = currentText.split(' ');
+        const bufferWords = currentBuffer.split(' ');
+        let overlapIndex = -1;
+        
+        // Look for overlapping phrases
+        for (let i = 0; i < Math.min(words.length, bufferWords.length); i++) {
+          const phrase = words.slice(0, i + 1).join(' ').toLowerCase();
+          const bufferEnd = bufferWords.slice(-i - 1).join(' ').toLowerCase();
+          if (bufferEnd === phrase) {
+            overlapIndex = i;
+          }
+        }
+        
+        if (overlapIndex >= 0) {
+          // Merge with overlap handling
+          this.recognitionBuffer = currentBuffer + ' ' + words.slice(overlapIndex + 1).join(' ');
+        } else {
+          // Check for sentence boundaries
+          const shouldAddPeriod = this.shouldAddPunctuation(currentBuffer, currentText);
+          const separator = shouldAddPeriod ? ". " : " ";
+          this.recognitionBuffer = currentBuffer + separator + currentText;
+        }
       } else {
-        // Start new sentence
-        this.recognitionBuffer = text;
+        // Handle question repetition
+        if (this.isQuestionLike(currentText) && this.isQuestionLike(currentBuffer)) {
+          // If both are questions, keep the newer one
+          this.recognitionBuffer = currentText;
+        } else {
+          // Start new sentence
+          this.recognitionBuffer = currentText;
+        }
       }
       
       this.lastRecognitionTime = Date.now();
       this.currentText = this.recognitionBuffer;
       this.interimResult = ""; // Clear interim display
 
-      // Check for immediate auto-submit if prepared
-      if (this._prepareQuickSubmit && isAutoSubmit) {
-        this._prepareQuickSubmit = false;
-        if (this.shouldAutoSubmit(this.recognitionBuffer)) {
+      // Enhanced auto-submit handling
+      if (isAutoSubmit) {
+        const isReadyToSubmit = this._prepareQuickSubmit || 
+                               this.isCompleteQuestion(this.recognitionBuffer) ||
+                               (this.isSpeaking === false && Date.now() - this.lastSpeechTime > 1000);
+        
+        if (isReadyToSubmit && this.shouldAutoSubmit(this.recognitionBuffer)) {
+          this._prepareQuickSubmit = false;
           this._debouncedSubmit();
         }
       }
@@ -972,6 +1034,24 @@ export default {
       if (this.shouldAutoSubmit(text)) {
         this._debouncedSubmit();
       }
+    },
+
+    isQuestionLike(text) {
+      if (!text) return false;
+      const normalized = text.trim().toLowerCase();
+      
+      // Check for question marks
+      if (/[?？]\s*$/.test(normalized)) return true;
+      
+      // Check for question starters
+      const questionStarters = /^(what|where|when|why|how|can|could|would|should|do|does|did|is|are|was|were|have|has|had)\b/i;
+      if (questionStarters.test(normalized)) return true;
+      
+      // Check for embedded questions
+      const embeddedPatterns = /\b(tell me|explain|describe|clarify|elaborate on|share|discuss)\b/i;
+      if (embeddedPatterns.test(normalized)) return true;
+      
+      return false;
     },
 
     // ...existing code...
