@@ -274,13 +274,19 @@ export default {
   },
   methods: {
     // Smooth scroll to bottom helper
+    // Smooth scroll to bottom helper (improved for mobile streaming)
     scrollToBottom(repeat = 3, delay = 100) {
       const chatHistory = this.$refs.chatHistory;
       if (!chatHistory) return;
-      chatHistory.style.scrollBehavior = "smooth";
+      // Always force scroll to bottom
       for (let i = 0; i < repeat; i++) {
         setTimeout(() => {
           chatHistory.scrollTop = chatHistory.scrollHeight;
+          // Try scrollIntoView on last message for mobile browsers
+          const lastMsg = chatHistory.querySelector('.row.g-0.mb-2:last-child');
+          if (lastMsg && typeof lastMsg.scrollIntoView === 'function') {
+            lastMsg.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
         }, delay * i);
       }
     },
@@ -561,7 +567,7 @@ export default {
               JSON.stringify(this.qaHistory)
             );
           }
-          // Smooth scroll to bottom as answer grows
+          // Smooth scroll to bottom as answer grows (force for mobile)
           this.$nextTick(() => {
             this.scrollToBottom(3, 80);
           });
