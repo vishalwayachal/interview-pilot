@@ -249,8 +249,8 @@ export default {
       try {
         this.qaHistory = JSON.parse(saved);
         // Trim to last 10 conversation pairs (20 messages)
-        if (this.qaHistory.length > 20) {
-          this.qaHistory = this.qaHistory.slice(-20);
+        if (this.qaHistory.length > 10) {
+          this.qaHistory = this.qaHistory.slice(-10);
           localStorage.setItem(
             "interview_qa_history",
             JSON.stringify(this.qaHistory)
@@ -299,7 +299,26 @@ export default {
         timeout = setTimeout(() => func.apply(this, args), wait);
       };
     },
-    // ...existing code...
+
+    // Fallback: isCompleteQuestion helper if not present
+    isCompleteQuestion(text) {
+      if (!text) return false;
+      const normalized = text.trim();
+      // Ends with question mark or common question starters
+      if (/[?？]\s*$/.test(normalized)) return true;
+      const starters = /^(what|where|when|why|how|can|could|would|should|do|does|did|is|are|was|were|have|has|had)\b/i;
+      if (starters.test(normalized)) return true;
+      return false;
+    },
+
+    // Ensure processSpeechResult is defined for speech recognition
+    processSpeechResult(text, isFinal, isInterim, confidence) {
+      if (isFinal) {
+        this.processFinalResult(text, this.autoSubmitSpeech);
+      } else if (isInterim) {
+        this.handleInterimResult(text);
+      }
+    },
 
     handleInterimResult(text) {
       // Update interim display with smart truncation
@@ -1123,6 +1142,7 @@ async function sleep(ms) {
 
 body {
   background: #f6f8fc;
+  
 }
 
 .router_view {
@@ -1275,6 +1295,8 @@ body {
   padding-left: 0 !important;
   padding-right: 0 !important;
   box-sizing: border-box;
+  background: linear-gradient(135deg, #fafdff 70%, #eaf1fb 100%);
+  box-shadow: 0 2px 12px 0 rgba(80,120,200,0.07);
 }
 .chat-app-body {
   width: 100%;
@@ -1295,7 +1317,7 @@ body {
   padding-left: 0 !important;
   padding-right: 0 !important;
   padding-bottom: 25px !important;
-  background: #f6f8fc;
+  background: linear-gradient(135deg, #f6f8fc 60%, #eaf1fb 100%);
   max-width: calc(100% - 32px) !important;
   box-sizing: border-box;
 }
@@ -1309,6 +1331,8 @@ body {
   position: sticky;
   bottom: 0;
   z-index: 101;
+  background: linear-gradient(0deg, #fafdff 70%, #eaf1fb 100%);
+  box-shadow: 0 -2px 12px 0 rgba(80,120,200,0.07);
 }
 .footer {
   box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.07);
@@ -1346,32 +1370,32 @@ body {
 
 /* Plain message style (no bubble) */
 .plain-message {
-  background: #f7fafd;
+  background: linear-gradient(120deg, #f7fafd 80%, #eaf1fb 100%);
   color: #222;
   border: 1.5px solid #e3e8f0;
-  border-radius: 0.8rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  padding: 0.5rem 1rem 0.5rem 1rem !important;
+  border-radius: 1.1rem;
+  box-shadow: 0 4px 24px 0 rgba(80,120,200,0.10), 0 1.5px 6px 0 rgba(0,0,0,0.04);
+  padding: 0.7rem 1.2rem 0.7rem 1.2rem !important;
   margin: 2px 0 2px 0 !important;
-  font-size: 1.08rem;
-  line-height: 1.6;
+  font-size: 1.09rem;
+  line-height: 1.7;
   word-break: break-word;
   display: block;
   width: 100%;
   text-align: inherit;
-  transition: background 0.2s, border 0.2s;
+  transition: background 0.2s, border 0.2s, box-shadow 0.2s;
 }
 
 /* User message box (right) */
 .text-end .plain-message {
-  background: #e6f0ff;
+  background: linear-gradient(90deg, #e6f0ff 80%, #dbeafe 100%);
   color: #174ea6;
   border: 1.5px solid #b6d4fe;
   text-align: right;
 }
 /* AI message box (left) */
 .text-start .plain-message {
-  background: #f7fafd;
+  background: linear-gradient(120deg, #f7fafd 80%, #eaf1fb 100%);
   color: #222;
   border: 1.5px solid #e3e8f0;
   text-align: left;
