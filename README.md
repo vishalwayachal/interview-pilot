@@ -7,7 +7,7 @@
 This web application captures audio from the microphone, uses Microsoft Azure's speech recognition service to obtain a transcript, and then invokes GPT to generate an answer.
 
 Below are screenshots of the anonymized resume rendered in the browser:
-
+![Mobile Screenshot](screens/chat.png)
 ![Web Screenshot](screens/web.png)
 ![Mobile Screenshot](screens/mobile.png)
 
