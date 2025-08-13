@@ -23,6 +23,9 @@
               <option value="python">Python</option>
               <option value="postgresql">PostgreSQL</option>
               <option value="mongo">MongoDB</option>
+              <option value="php laravel">Laravel</option>
+              <option value="react">React</option>
+              <option value="angular">Angular</option>
             </select>
           </div>
           <div class="form-check form-switch mb-0">
@@ -37,8 +40,13 @@
             </label>
           </div>
         </div>
-        <div v-if="autoSubmitSpeech" class="alert alert-info py-1 px-2 mb-1" style="font-size:0.98em;">
-          <i class="el-icon-info"></i> Auto-submit is ON: Answers will be shown instantly when a question is recognized.
+        <div
+          v-if="autoSubmitSpeech"
+          class="alert alert-info py-1 px-2 mb-1"
+          style="font-size: 0.98em"
+        >
+          <i class="el-icon-info"></i> Auto-submit is ON: Answers will be shown
+          instantly when a question is recognized.
         </div>
         <div class="speech-input-container">
           <textarea
@@ -97,7 +105,7 @@
             class="main-action-btn"
             >Audio</el-button
           >
-    
+
           <el-button
             type="warning"
             icon="el-icon-stopwatch"
@@ -108,14 +116,24 @@
             >Stop</el-button
           >
           <MyTimer ref="MyTimer" />
+        </div>
       </div>
-      </div>
-        <div class="box video_box" v-if="tabVideoVisible">
+      <div class="box video_box" v-if="tabVideoVisible">
         <div class="func_desc">
           <i class="el-icon-video-camera"></i>
           <span>Tab Video Preview</span>
         </div>
-        <video ref="tabVideo" style="max-width: 100%; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(60,80,120,0.07);" autoplay muted playsinline></video>
+        <video
+          ref="tabVideo"
+          style="
+            max-width: 100%;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(60, 80, 120, 0.07);
+          "
+          autoplay
+          muted
+          playsinline
+        ></video>
       </div>
       <div class="box gpt_box">
         <div class="func_desc">
@@ -155,7 +173,6 @@
         </div>
         <button class="btn btn-sm btn-outline-danger mt-1" @click="clearHistory">Clear History</button>
       </div> -->
-    
     </div>
   </div>
 </template>
@@ -215,7 +232,10 @@ export default {
   created() {
     // Initialize the debounced submit function
     this._debouncedSubmit = this._debounce(() => {
-      if (this.currentText?.trim() && (!this.lastQuestion || this.lastQuestion !== this.currentText.trim())) {
+      if (
+        this.currentText?.trim() &&
+        (!this.lastQuestion || this.lastQuestion !== this.currentText.trim())
+      ) {
         this.askCurrentText().finally(() => {
           this.processingRecognition = false;
           this.recognitionBuffer = "";
@@ -255,7 +275,12 @@ export default {
     },
 
     // Enhanced speech processing with confidence checking
-    processSpeechResult(text, isAutoSubmit = false, isInterim = false, confidence = 1) {
+    processSpeechResult(
+      text,
+      isAutoSubmit = false,
+      isInterim = false,
+      confidence = 1
+    ) {
       if (!text?.trim()) return;
 
       const now = Date.now();
@@ -278,9 +303,15 @@ export default {
 
       // Skip low confidence results for final recognition with dynamic threshold
       if (!isInterim) {
-        const dynamicThreshold = this.audioLevel > 0.7 ? 0.7 : this.confidenceThreshold;
+        const dynamicThreshold =
+          this.audioLevel > 0.7 ? 0.7 : this.confidenceThreshold;
         if (confidence < dynamicThreshold) {
-          console.log('Skipping low confidence result:', text, 'confidence:', confidence);
+          console.log(
+            "Skipping low confidence result:",
+            text,
+            "confidence:",
+            confidence
+          );
           return;
         }
       }
@@ -302,34 +333,42 @@ export default {
       const timeSinceLastRecognition = now - this.lastRecognitionTime;
       const normalizedNewText = text.toLowerCase().trim();
       const normalizedBuffer = this.recognitionBuffer.toLowerCase().trim();
-      
+
       // Check for duplicate or overlapping text
-      if (normalizedBuffer.includes(normalizedNewText) || 
-          normalizedNewText.includes(normalizedBuffer)) {
+      if (
+        normalizedBuffer.includes(normalizedNewText) ||
+        normalizedNewText.includes(normalizedBuffer)
+      ) {
         // If it's the same text or overlapping, use the longer one
-        this.recognitionBuffer = text.length > this.recognitionBuffer.length ? text : this.recognitionBuffer;
+        this.recognitionBuffer =
+          text.length > this.recognitionBuffer.length
+            ? text
+            : this.recognitionBuffer;
       } else if (timeSinceLastRecognition < 1500) {
         // Improved continuation logic with duplicate prevention
-        const words = text.split(' ');
-        const bufferWords = this.recognitionBuffer.split(' ');
-        
+        const words = text.split(" ");
+        const bufferWords = this.recognitionBuffer.split(" ");
+
         // Check for overlapping words at the end/beginning
         let overlapCount = 0;
         for (let i = 1; i <= 3 && i <= words.length; i++) {
-          const endPhrase = bufferWords.slice(-i).join(' ').toLowerCase();
-          const startPhrase = words.slice(0, i).join(' ').toLowerCase();
+          const endPhrase = bufferWords.slice(-i).join(" ").toLowerCase();
+          const startPhrase = words.slice(0, i).join(" ").toLowerCase();
           if (endPhrase === startPhrase) {
             overlapCount = i;
           }
         }
-        
+
         // Add new text with proper separation and overlap handling
         if (overlapCount > 0) {
-          this.recognitionBuffer += ' ' + words.slice(overlapCount).join(' ');
+          this.recognitionBuffer += " " + words.slice(overlapCount).join(" ");
         } else {
           // Check if we should add punctuation
           let separator = " ";
-          if (!/[.!?]\s*$/.test(this.recognitionBuffer) && /^[A-Z]/.test(text)) {
+          if (
+            !/[.!?]\s*$/.test(this.recognitionBuffer) &&
+            /^[A-Z]/.test(text)
+          ) {
             separator = ". ";
           }
           this.recognitionBuffer += separator + text;
@@ -338,7 +377,7 @@ export default {
         // Start new sentence if enough time has passed
         this.recognitionBuffer = text;
       }
-      
+
       this.lastRecognitionTime = now;
       this.interimResult = ""; // Clear interim when we get final result
 
@@ -358,18 +397,21 @@ export default {
     handleInterimResult(text) {
       // Update interim display with smart truncation
       this.interimResult = text;
-      
+
       // Enhanced question detection for interim results
       const potentialQuestion = text.trim().toLowerCase();
       const hasQuestionMarker = /[?？]\s*$/.test(potentialQuestion);
-      const hasQuestionStart = /^(what|where|when|why|how|can you|could you|would you)\b/i.test(potentialQuestion);
-      
+      const hasQuestionStart =
+        /^(what|where|when|why|how|can you|could you|would you)\b/i.test(
+          potentialQuestion
+        );
+
       // Track potential questions for smarter auto-submit
       if (hasQuestionMarker || hasQuestionStart) {
         this._prepareQuickSubmit = true;
         this._lastQuestionIndicator = Date.now();
       }
-      
+
       // Clear question preparation after delay if no final result
       if (this._prepareQuickSubmit) {
         clearTimeout(this._questionTimeout);
@@ -377,7 +419,7 @@ export default {
           this._prepareQuickSubmit = false;
         }, 3000); // Reset after 3 seconds if no final result
       }
-      
+
       // Update audio activity timestamp
       this.lastSpeechTime = Date.now();
     },
@@ -386,40 +428,53 @@ export default {
       const timeSinceLastRecognition = Date.now() - this.lastRecognitionTime;
       const currentText = text.trim();
       const currentBuffer = this.recognitionBuffer.trim();
-      
+
       // Prevent duplicate sentences
       if (currentBuffer.toLowerCase().includes(currentText.toLowerCase())) {
         return; // Skip if the new text is already in the buffer
       }
-      
+
       // Advanced sentence combination logic
       if (timeSinceLastRecognition < 1500) {
         // Check for partial overlaps
-        const words = currentText.split(' ');
-        const bufferWords = currentBuffer.split(' ');
+        const words = currentText.split(" ");
+        const bufferWords = currentBuffer.split(" ");
         let overlapIndex = -1;
-        
+
         // Look for overlapping phrases
         for (let i = 0; i < Math.min(words.length, bufferWords.length); i++) {
-          const phrase = words.slice(0, i + 1).join(' ').toLowerCase();
-          const bufferEnd = bufferWords.slice(-i - 1).join(' ').toLowerCase();
+          const phrase = words
+            .slice(0, i + 1)
+            .join(" ")
+            .toLowerCase();
+          const bufferEnd = bufferWords
+            .slice(-i - 1)
+            .join(" ")
+            .toLowerCase();
           if (bufferEnd === phrase) {
             overlapIndex = i;
           }
         }
-        
+
         if (overlapIndex >= 0) {
           // Merge with overlap handling
-          this.recognitionBuffer = currentBuffer + ' ' + words.slice(overlapIndex + 1).join(' ');
+          this.recognitionBuffer =
+            currentBuffer + " " + words.slice(overlapIndex + 1).join(" ");
         } else {
           // Check for sentence boundaries
-          const shouldAddPeriod = this.shouldAddPunctuation(currentBuffer, currentText);
+          const shouldAddPeriod = this.shouldAddPunctuation(
+            currentBuffer,
+            currentText
+          );
           const separator = shouldAddPeriod ? ". " : " ";
           this.recognitionBuffer = currentBuffer + separator + currentText;
         }
       } else {
         // Handle question repetition
-        if (this.isQuestionLike(currentText) && this.isQuestionLike(currentBuffer)) {
+        if (
+          this.isQuestionLike(currentText) &&
+          this.isQuestionLike(currentBuffer)
+        ) {
           // If both are questions, keep the newer one
           this.recognitionBuffer = currentText;
         } else {
@@ -427,17 +482,19 @@ export default {
           this.recognitionBuffer = currentText;
         }
       }
-      
+
       this.lastRecognitionTime = Date.now();
       this.currentText = this.recognitionBuffer;
       this.interimResult = ""; // Clear interim display
 
       // Enhanced auto-submit handling
       if (isAutoSubmit) {
-        const isReadyToSubmit = this._prepareQuickSubmit || 
-                               this.isCompleteQuestion(this.recognitionBuffer) ||
-                               (this.isSpeaking === false && Date.now() - this.lastSpeechTime > 1000);
-        
+        const isReadyToSubmit =
+          this._prepareQuickSubmit ||
+          this.isCompleteQuestion(this.recognitionBuffer) ||
+          (this.isSpeaking === false &&
+            Date.now() - this.lastSpeechTime > 1000);
+
         if (isReadyToSubmit && this.shouldAutoSubmit(this.recognitionBuffer)) {
           this._prepareQuickSubmit = false;
           this._debouncedSubmit();
@@ -447,51 +504,74 @@ export default {
 
     shouldAddPunctuation(previous, current) {
       if (!previous || !current) return false;
-      
+
       // Check if the new text starts with a capital letter
       const startsWithCapital = /^[A-Z]/.test(current);
-      
+
       // Check if the previous text ends with punctuation
       const hasEndPunctuation = /[.!?。！？]\s*$/.test(previous);
-      
+
       // Check for sentence-starting words
-      const startsWithTransition = /^(however|therefore|furthermore|moreover|in addition|consequently)\b/i.test(current);
-      
+      const startsWithTransition =
+        /^(however|therefore|furthermore|moreover|in addition|consequently)\b/i.test(
+          current
+        );
+
       return (startsWithCapital || startsWithTransition) && !hasEndPunctuation;
     },
 
     // Enhanced auto-submit detection with comprehensive patterns
     shouldAutoSubmit(text) {
-      if (!this.autoSubmitSpeech || !this.state === "ing" || !text) return false;
-      
+      if (!this.autoSubmitSpeech || !this.state === "ing" || !text)
+        return false;
+
       const normalizedText = text.trim().toLowerCase();
-      
+
       // Definitive question markers with smart punctuation check
-      if (/[?？]\s*$/.test(normalizedText) || /[.。]\s*$/.test(normalizedText)) return true;
-      
+      if (/[?？]\s*$/.test(normalizedText) || /[.。]\s*$/.test(normalizedText))
+        return true;
+
       // Comprehensive question phrase detection
-      const hasQuestionPhrase = /(can you|could you|would you|what|where|when|why|how|tell me about|explain|describe|do you|have you|did you|are you|is there|could|should|will you)\b.*/.test(normalizedText);
-      const hasQuestionContext = /\b(wondering|curious|like to know|explain|tell me|share|thoughts on|opinion|experience with|approach to)\b/.test(normalizedText);
-      
+      const hasQuestionPhrase =
+        /(can you|could you|would you|what|where|when|why|how|tell me about|explain|describe|do you|have you|did you|are you|is there|could|should|will you)\b.*/.test(
+          normalizedText
+        );
+      const hasQuestionContext =
+        /\b(wondering|curious|like to know|explain|tell me|share|thoughts on|opinion|experience with|approach to)\b/.test(
+          normalizedText
+        );
+
       // Interview-specific patterns with broader context
-      const isInterviewQuestion = /(your experience|your background|your role|your skills|your projects|your approach|your methodology|your process|your thoughts|your opinion|your view|your strategy|your expertise)\b/.test(normalizedText);
-      
+      const isInterviewQuestion =
+        /(your experience|your background|your role|your skills|your projects|your approach|your methodology|your process|your thoughts|your opinion|your view|your strategy|your expertise)\b/.test(
+          normalizedText
+        );
+
       // Technical interview patterns
-      const isTechnicalQuestion = /(difference between|how does|how would you|best practices|design pattern|architecture|implementation|performance|scalability|optimization|framework|library|tool|technology)\b/.test(normalizedText);
-      
+      const isTechnicalQuestion =
+        /(difference between|how does|how would you|best practices|design pattern|architecture|implementation|performance|scalability|optimization|framework|library|tool|technology)\b/.test(
+          normalizedText
+        );
+
       // Length-based smart submission for non-question statements that seem complete
-      const isCompleteSentence = normalizedText.length > 50 && /[.!?。！？]\s*$/.test(normalizedText);
-      
-      return hasQuestionPhrase || 
-             (hasQuestionContext && normalizedText.length > 30) || 
-             isInterviewQuestion || 
-             isTechnicalQuestion ||
-             isCompleteSentence;
+      const isCompleteSentence =
+        normalizedText.length > 50 && /[.!?。！？]\s*$/.test(normalizedText);
+
+      return (
+        hasQuestionPhrase ||
+        (hasQuestionContext && normalizedText.length > 30) ||
+        isInterviewQuestion ||
+        isTechnicalQuestion ||
+        isCompleteSentence
+      );
     },
 
     // Helper method to submit text with proper state management
     _submitText() {
-      if (this.currentText?.trim() && (!this.lastQuestion || this.lastQuestion !== this.currentText.trim())) {
+      if (
+        this.currentText?.trim() &&
+        (!this.lastQuestion || this.lastQuestion !== this.currentText.trim())
+      ) {
         this.askCurrentText().finally(() => {
           this.processingRecognition = false;
           this.recognitionBuffer = "";
@@ -511,7 +591,10 @@ export default {
 
       let questionText = (this.currentText || "").trim();
       if (!questionText) {
-        this.$message && this.$message.error("No question to answer. Please speak or type a question.");
+        this.$message &&
+          this.$message.error(
+            "No question to answer. Please speak or type a question."
+          );
         this.gptRunning = false;
         return;
       }
@@ -556,11 +639,16 @@ export default {
         }
         // Save Q&A to history
         this.qaHistory.push({ question: this.lastQuestion, answer });
-        localStorage.setItem("interview_qa_history", JSON.stringify(this.qaHistory));
+        localStorage.setItem(
+          "interview_qa_history",
+          JSON.stringify(this.qaHistory)
+        );
         // Auto-clear input after answer
         this.currentText = " ";
         // Clear suggestions after answer
-        setTimeout(() => { this.suggestions = []; }, 3000);
+        setTimeout(() => {
+          this.suggestions = [];
+        }, 3000);
       } catch (e) {
         this.show_ai_thinking_effect = false;
         this.ai_result = "" + e;
@@ -575,11 +663,21 @@ export default {
       const q = (question || "").toLowerCase();
       let suggestions = [];
       if (q.includes("introduce") || q.includes("yourself")) {
-        suggestions.push("Example: 'My name is John Doe, and I am a software engineer with 5 years of experience.'");
-        suggestions.push("Tip: Mention your degree, university, or current role.");
-        suggestions.push("Phrase: 'I specialize in frontend development and have strong skills in Vue.js and React.'");
-        suggestions.push("Tip: Highlight a recent project or achievement, e.g., 'Recently, I led a team to deliver a major web app.'");
-        suggestions.push("Phrase: 'I'm excited about this opportunity because I enjoy solving real-world problems and collaborating with talented teams.'");
+        suggestions.push(
+          "Example: 'My name is John Doe, and I am a software engineer with 5 years of experience.'"
+        );
+        suggestions.push(
+          "Tip: Mention your degree, university, or current role."
+        );
+        suggestions.push(
+          "Phrase: 'I specialize in frontend development and have strong skills in Vue.js and React.'"
+        );
+        suggestions.push(
+          "Tip: Highlight a recent project or achievement, e.g., 'Recently, I led a team to deliver a major web app.'"
+        );
+        suggestions.push(
+          "Phrase: 'I'm excited about this opportunity because I enjoy solving real-world problems and collaborating with talented teams.'"
+        );
       } else if (q.includes("strength") || q.includes("weakness")) {
         suggestions.push("Be honest but positive.");
         suggestions.push("Give examples to support your points.");
@@ -601,7 +699,11 @@ export default {
       } else if (q.includes("sql") || q.includes("database")) {
         suggestions.push("Mention normalization and indexing.");
         suggestions.push("Discuss query optimization.");
-      } else if (q.includes("vue") || q.includes("react") || q.includes("frontend")) {
+      } else if (
+        q.includes("vue") ||
+        q.includes("react") ||
+        q.includes("frontend")
+      ) {
         suggestions.push("Talk about component-based architecture.");
         suggestions.push("Mention state management and performance.");
       } else if (q.includes("node") || q.includes("backend")) {
@@ -646,17 +748,16 @@ export default {
 
       // Request microphone permission before initializing SpeechSDK
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+        const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
-            autoGainControl: true
-          } 
+            autoGainControl: true,
+          },
         });
-        
+
         // Setup audio analysis for this stream
         this.setupAudioAnalysis(stream);
-        
       } catch (err) {
         if (this.$message) {
           this.$message.error(
@@ -704,32 +805,39 @@ export default {
 
       // Enhanced recognition event handlers with smart processing
       recognizer.recognized = (sender, event) => {
-        if (sdk.ResultReason.RecognizedSpeech === event.result.reason && event.result.text) {
+        if (
+          sdk.ResultReason.RecognizedSpeech === event.result.reason &&
+          event.result.text
+        ) {
           const result = event.result;
           const text = result.text;
           const confidence = result.confidence || 0.8; // Default confidence if not provided
-          
+
           // Enhanced noise filtering
           if (text.trim().length < 3 && confidence < 0.7) {
-            console.log('Filtered out short, low confidence result:', text);
+            console.log("Filtered out short, low confidence result:", text);
             return;
           }
-          
+
           // Process final result with confidence
           this.processSpeechResult(text, true, false, confidence);
-          
+
           // Smart auto-submit with context awareness
           const currentBuffer = this.recognitionBuffer.trim();
           if (currentBuffer && this.autoSubmitSpeech && !this.gptRunning) {
-            const timeSinceLastSubmit = Date.now() - (this._lastSubmitTime || 0);
+            const timeSinceLastSubmit =
+              Date.now() - (this._lastSubmitTime || 0);
             const minSubmitInterval = 2000; // Minimum 2 seconds between submissions
-            
+
             // Check for definite question end and timing
-            if (timeSinceLastSubmit > minSubmitInterval && 
-                (this.isCompleteQuestion(currentBuffer) || 
-                 (/[?！?]\s*$/.test(currentBuffer) && currentBuffer.length > 10) ||
-                 (this._prepareQuickSubmit && this.shouldAutoSubmit(currentBuffer)))) {
-              
+            if (
+              timeSinceLastSubmit > minSubmitInterval &&
+              (this.isCompleteQuestion(currentBuffer) ||
+                (/[?！?]\s*$/.test(currentBuffer) &&
+                  currentBuffer.length > 10) ||
+                (this._prepareQuickSubmit &&
+                  this.shouldAutoSubmit(currentBuffer)))
+            ) {
               this._lastSubmitTime = Date.now();
               this._debouncedSubmit();
               this._prepareQuickSubmit = false;
@@ -738,7 +846,7 @@ export default {
         } else if (sdk.ResultReason.NoMatch === event.result.reason) {
           const details = event.result.noMatchDetails;
           console.log("Recognition details:", details);
-          
+
           // Smart error handling based on reason
           if (this.state === "ing") {
             if (details.reason === sdk.NoMatchReason.InitialSilenceTimeout) {
@@ -747,7 +855,9 @@ export default {
               // Don't show error for intentional cancellation
               return;
             } else {
-              this.$message.info("Could not recognize speech. Please try speaking more clearly.");
+              this.$message.info(
+                "Could not recognize speech. Please try speaking more clearly."
+              );
             }
           }
         }
@@ -757,27 +867,37 @@ export default {
         // Enhanced interim result handling
         if (e.result.text) {
           const interimText = e.result.text;
-          
+
           // Debounce rapid interim updates
           clearTimeout(this._interimTimeout);
           this._interimTimeout = setTimeout(() => {
             // Smart filtering of interim results
             if (interimText.length > 2) {
               // Check for common speech recognition artifacts
-              const cleanText = interimText.replace(/^\s*(um|uh|eh|ah)\s+/i, '');
-              
+              const cleanText = interimText.replace(
+                /^\s*(um|uh|eh|ah)\s+/i,
+                ""
+              );
+
               // Process interim with confidence estimation
               const estimatedConfidence = this.audioLevel > 0.5 ? 0.9 : 0.7;
-              this.processSpeechResult(cleanText, false, true, estimatedConfidence);
-              
+              this.processSpeechResult(
+                cleanText,
+                false,
+                true,
+                estimatedConfidence
+              );
+
               // Update UI feedback
               if (this.autoSubmitSpeech) {
-                const isLikelyQuestion = /^(what|how|why|when|where|could|can|should|would|will|do|is|are)\b/i.test(cleanText) ||
-                                       /[?]\s*$/.test(cleanText);
+                const isLikelyQuestion =
+                  /^(what|how|why|when|where|could|can|should|would|will|do|is|are)\b/i.test(
+                    cleanText
+                  ) || /[?]\s*$/.test(cleanText);
                 if (isLikelyQuestion) {
-                  this.$refs.textarea?.classList.add('potential-question');
+                  this.$refs.textarea?.classList.add("potential-question");
                 } else {
-                  this.$refs.textarea?.classList.remove('potential-question');
+                  this.$refs.textarea?.classList.remove("potential-question");
                 }
               }
             }
@@ -809,7 +929,7 @@ export default {
     userStopCopilot() {
       this.copilot_stopping = true;
       if (this.tabVideoStream) {
-        this.tabVideoStream.getTracks().forEach(track => track.stop());
+        this.tabVideoStream.getTracks().forEach((track) => track.stop());
         this.tabVideoStream = null;
         this.tabVideoVisible = false;
       }
@@ -830,7 +950,7 @@ export default {
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
-          audio: { echoCancellation: false, noiseSuppression: false }
+          audio: { echoCancellation: false, noiseSuppression: false },
         });
         // Show video in the page
         this.tabVideoStream = stream;
@@ -845,8 +965,10 @@ export default {
         // Check for audio tracks
         const audioTracks = stream.getAudioTracks();
         if (!audioTracks.length) {
-          this.$message.error("No audio track found in selected tab/window. Please ensure you select a tab or window with audio playing.");
-          stream.getTracks().forEach(track => track.stop());
+          this.$message.error(
+            "No audio track found in selected tab/window. Please ensure you select a tab or window with audio playing."
+          );
+          stream.getTracks().forEach((track) => track.stop());
           this.tabVideoVisible = false;
           return;
         }
@@ -857,32 +979,47 @@ export default {
         const language = config_util.azure_language();
         if (!token || !region) {
           this.$message.error("Azure token/region not set.");
-          stream.getTracks().forEach(track => track.stop());
+          stream.getTracks().forEach((track) => track.stop());
           this.tabVideoVisible = false;
           return;
         }
-        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(token, region);
+        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
+          token,
+          region
+        );
         speechConfig.speechRecognitionLanguage = language;
         let audioConfig;
         try {
           audioConfig = SpeechSDK.AudioConfig.fromStreamInput(audioStream);
         } catch (e) {
-          this.$message.error("Tab audio capture is not supported in this browser or by the Azure SDK. This feature requires browser and SDK support for MediaStream input.\nTry using a virtual audio cable or set your system audio as the microphone.\n\nTechnical details: " + (e && e.message ? e.message : e));
-          stream.getTracks().forEach(track => track.stop());
+          this.$message.error(
+            "Tab audio capture is not supported in this browser or by the Azure SDK. This feature requires browser and SDK support for MediaStream input.\nTry using a virtual audio cable or set your system audio as the microphone.\n\nTechnical details: " +
+              (e && e.message ? e.message : e)
+          );
+          stream.getTracks().forEach((track) => track.stop());
           this.tabVideoVisible = false;
           return;
         }
-        this.recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+        this.recognizer = new SpeechSDK.SpeechRecognizer(
+          speechConfig,
+          audioConfig
+        );
         const recognizer = this.recognizer;
         const sdk = SpeechSDK;
         this.currentText = " ";
         this.copilot_starting = true;
         // Set up recognition event handlers for tab audio
         recognizer.recognized = (sender, event) => {
-          if (sdk.ResultReason.RecognizedSpeech === event.result.reason && event.result.text) {
+          if (
+            sdk.ResultReason.RecognizedSpeech === event.result.reason &&
+            event.result.text
+          ) {
             this.processSpeechResult(event.result.text, true);
           } else if (sdk.ResultReason.NoMatch === event.result.reason) {
-            console.log("Speech could not be recognized:", event.result.noMatchDetails);
+            console.log(
+              "Speech could not be recognized:",
+              event.result.noMatchDetails
+            );
           }
         };
 
@@ -909,14 +1046,17 @@ export default {
             this.copilot_starting = false;
             this.$message.error("Tab Audio Start Failed:" + err);
             window.console.error("tab audio recognition start failed", err);
-            stream.getTracks().forEach(track => track.stop());
+            stream.getTracks().forEach((track) => track.stop());
             this.tabVideoVisible = false;
           }
         );
       } catch (err) {
-        let msg = "Tab audio capture failed: " + (err && err.message ? err.message : err);
-        if (err && err.name === 'NotSupportedError') {
-          msg += "\n\nYour browser does not support tab audio capture with getDisplayMedia. Try updating your browser, or use a different browser. If you need to capture system audio, consider using a virtual audio cable or set your system audio as the microphone.";
+        let msg =
+          "Tab audio capture failed: " +
+          (err && err.message ? err.message : err);
+        if (err && err.name === "NotSupportedError") {
+          msg +=
+            "\n\nYour browser does not support tab audio capture with getDisplayMedia. Try updating your browser, or use a different browser. If you need to capture system audio, consider using a virtual audio cable or set your system audio as the microphone.";
         }
         this.$message.error(msg);
         this.tabVideoVisible = false;
@@ -925,7 +1065,8 @@ export default {
     setupAudioAnalysis(stream) {
       try {
         // Create audio context and analyzer
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        this.audioContext = new (window.AudioContext ||
+          window.webkitAudioContext)();
         this.audioAnalyzer = this.audioContext.createAnalyser();
         this.audioAnalyzer.fftSize = 256;
 
@@ -936,7 +1077,7 @@ export default {
         // Start monitoring audio levels
         this.monitorAudioLevel();
       } catch (error) {
-        console.error('Audio analysis setup failed:', error);
+        console.error("Audio analysis setup failed:", error);
       }
     },
 
@@ -946,9 +1087,10 @@ export default {
       const dataArray = new Uint8Array(this.audioAnalyzer.frequencyBinCount);
       const updateLevel = () => {
         this.audioAnalyzer.getByteFrequencyData(dataArray);
-        
+
         // Calculate average volume level
-        const average = dataArray.reduce((acc, value) => acc + value, 0) / dataArray.length;
+        const average =
+          dataArray.reduce((acc, value) => acc + value, 0) / dataArray.length;
         this.audioLevel = average / 255; // Normalize to 0-1
 
         // Update speaking state
@@ -963,7 +1105,7 @@ export default {
         }
 
         // Continue monitoring if still recording
-        if (this.state === 'ing') {
+        if (this.state === "ing") {
           requestAnimationFrame(updateLevel);
         }
       };
@@ -998,33 +1140,46 @@ export default {
     isCompleteSentence(text) {
       // Advanced sentence completion detection
       if (!text || text.length < this.minSentenceLength) return false;
-      
+
       const normalizedText = text.trim();
-      
+
       // Check for minimum word count
       const wordCount = normalizedText.split(/\s+/).length;
       if (wordCount < 3) return false;
-      
+
       // Strong indicators of completion
       const hasEndPunctuation = /[.!?。？！]\s*$/.test(normalizedText);
       const isQuestion = this.isCompleteQuestion(normalizedText);
-      
+
       // Check for complete grammatical structure
-      const hasSubjectVerb = /\b(I|you|he|she|it|they|we)\b.*\b(is|are|was|were|have|has|had|do|does|did|can|could|will|would|should)\b/i.test(normalizedText);
-      const hasCompleteStructure = /^[A-Z].*\b(and|or|but|because|however|therefore)\b.*[.!?]$/i.test(normalizedText);
-      
+      const hasSubjectVerb =
+        /\b(I|you|he|she|it|they|we)\b.*\b(is|are|was|were|have|has|had|do|does|did|can|could|will|would|should)\b/i.test(
+          normalizedText
+        );
+      const hasCompleteStructure =
+        /^[A-Z].*\b(and|or|but|because|however|therefore)\b.*[.!?]$/i.test(
+          normalizedText
+        );
+
       // Check for interview-specific patterns
-      const isInterviewResponse = /^(yes|no|correct|exactly|absolutely|definitely|indeed)\b.*/.test(normalizedText.toLowerCase());
-      const isCompoundThought = normalizedText.includes(',') && normalizedText.length > 50;
-      
+      const isInterviewResponse =
+        /^(yes|no|correct|exactly|absolutely|definitely|indeed)\b.*/.test(
+          normalizedText.toLowerCase()
+        );
+      const isCompoundThought =
+        normalizedText.includes(",") && normalizedText.length > 50;
+
       // Smart pause detection
-      const hasNaturalPause = this.audioLevel < 0.1 && Date.now() - this.lastSpeechTime > 1000;
-      
-      return hasEndPunctuation || 
-             isQuestion || 
-             (hasSubjectVerb && hasCompleteStructure) ||
-             (isInterviewResponse && hasNaturalPause) ||
-             (isCompoundThought && hasNaturalPause);
+      const hasNaturalPause =
+        this.audioLevel < 0.1 && Date.now() - this.lastSpeechTime > 1000;
+
+      return (
+        hasEndPunctuation ||
+        isQuestion ||
+        (hasSubjectVerb && hasCompleteStructure) ||
+        (isInterviewResponse && hasNaturalPause) ||
+        (isCompoundThought && hasNaturalPause)
+      );
     },
 
     processSentenceEnd(text) {
@@ -1039,18 +1194,20 @@ export default {
     isQuestionLike(text) {
       if (!text) return false;
       const normalized = text.trim().toLowerCase();
-      
+
       // Check for question marks
       if (/[?？]\s*$/.test(normalized)) return true;
-      
+
       // Check for question starters
-      const questionStarters = /^(what|where|when|why|how|can|could|would|should|do|does|did|is|are|was|were|have|has|had)\b/i;
+      const questionStarters =
+        /^(what|where|when|why|how|can|could|would|should|do|does|did|is|are|was|were|have|has|had)\b/i;
       if (questionStarters.test(normalized)) return true;
-      
+
       // Check for embedded questions
-      const embeddedPatterns = /\b(tell me|explain|describe|clarify|elaborate on|share|discuss)\b/i;
+      const embeddedPatterns =
+        /\b(tell me|explain|describe|clarify|elaborate on|share|discuss)\b/i;
       if (embeddedPatterns.test(normalized)) return true;
-      
+
       return false;
     },
 
@@ -1320,7 +1477,11 @@ async function sleep(ms) {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 </style>

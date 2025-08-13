@@ -23,6 +23,9 @@
               <option value="python">Python</option>
               <option value="postgresql">PostgreSQL</option>
               <option value="mongo">MongoDB</option>
+              <option value="php laravel">Laravel</option>
+              <option value="react">React</option>
+              <option value="angular">Angular</option>
             </select>
           </div>
           <div class="form-check form-switch mb-0">
@@ -89,7 +92,7 @@
             class="main-action-btn"
             >Audio</el-button
           >
-    
+
           <el-button
             type="warning"
             icon="el-icon-stopwatch"
@@ -100,14 +103,24 @@
             >Stop</el-button
           >
           <MyTimer ref="MyTimer" />
+        </div>
       </div>
-      </div>
-        <div class="box video_box" v-if="tabVideoVisible">
+      <div class="box video_box" v-if="tabVideoVisible">
         <div class="func_desc">
           <i class="el-icon-video-camera"></i>
           <span>Tab Video Preview</span>
         </div>
-        <video ref="tabVideo" style="max-width: 100%; border-radius: 0.5rem; box-shadow: 0 2px 8px rgba(60,80,120,0.07);" autoplay muted playsinline></video>
+        <video
+          ref="tabVideo"
+          style="
+            max-width: 100%;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px rgba(60, 80, 120, 0.07);
+          "
+          autoplay
+          muted
+          playsinline
+        ></video>
       </div>
       <div class="box gpt_box">
         <div class="func_desc">
@@ -123,7 +136,6 @@
           {{ ai_result }}
         </div>
       </div>
-    
     </div>
   </div>
 </template>
@@ -323,7 +335,7 @@ export default {
     userStopCopilot() {
       this.copilot_stopping = true;
       if (this.tabVideoStream) {
-        this.tabVideoStream.getTracks().forEach(track => track.stop());
+        this.tabVideoStream.getTracks().forEach((track) => track.stop());
         this.tabVideoStream = null;
         this.tabVideoVisible = false;
       }
@@ -344,7 +356,7 @@ export default {
       try {
         const stream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
-          audio: { echoCancellation: false, noiseSuppression: false }
+          audio: { echoCancellation: false, noiseSuppression: false },
         });
         // Show video in the page
         this.tabVideoStream = stream;
@@ -359,8 +371,10 @@ export default {
         // Check for audio tracks
         const audioTracks = stream.getAudioTracks();
         if (!audioTracks.length) {
-          this.$message.error("No audio track found in selected tab/window. Please ensure you select a tab or window with audio playing.");
-          stream.getTracks().forEach(track => track.stop());
+          this.$message.error(
+            "No audio track found in selected tab/window. Please ensure you select a tab or window with audio playing."
+          );
+          stream.getTracks().forEach((track) => track.stop());
           this.tabVideoVisible = false;
           return;
         }
@@ -371,22 +385,31 @@ export default {
         const language = config_util.azure_language();
         if (!token || !region) {
           this.$message.error("Azure token/region not set.");
-          stream.getTracks().forEach(track => track.stop());
+          stream.getTracks().forEach((track) => track.stop());
           this.tabVideoVisible = false;
           return;
         }
-        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(token, region);
+        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
+          token,
+          region
+        );
         speechConfig.speechRecognitionLanguage = language;
         let audioConfig;
         try {
           audioConfig = SpeechSDK.AudioConfig.fromStreamInput(audioStream);
         } catch (e) {
-          this.$message.error("Tab audio capture is not supported in this browser or by the Azure SDK. This feature requires browser and SDK support for MediaStream input.\nTry using a virtual audio cable or set your system audio as the microphone.\n\nTechnical details: " + (e && e.message ? e.message : e));
-          stream.getTracks().forEach(track => track.stop());
+          this.$message.error(
+            "Tab audio capture is not supported in this browser or by the Azure SDK. This feature requires browser and SDK support for MediaStream input.\nTry using a virtual audio cable or set your system audio as the microphone.\n\nTechnical details: " +
+              (e && e.message ? e.message : e)
+          );
+          stream.getTracks().forEach((track) => track.stop());
           this.tabVideoVisible = false;
           return;
         }
-        this.recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+        this.recognizer = new SpeechSDK.SpeechRecognizer(
+          speechConfig,
+          audioConfig
+        );
         const recognizer = this.recognizer;
         const sdk = SpeechSDK;
         this.currentText = " ";
@@ -421,14 +444,17 @@ export default {
             this.copilot_starting = false;
             this.$message.error("Tab Audio Start Failed:" + err);
             window.console.error("tab audio recognition start failed", err);
-            stream.getTracks().forEach(track => track.stop());
+            stream.getTracks().forEach((track) => track.stop());
             this.tabVideoVisible = false;
           }
         );
       } catch (err) {
-        let msg = "Tab audio capture failed: " + (err && err.message ? err.message : err);
-        if (err && err.name === 'NotSupportedError') {
-          msg += "\n\nYour browser does not support tab audio capture with getDisplayMedia. Try updating your browser, or use a different browser. If you need to capture system audio, consider using a virtual audio cable or set your system audio as the microphone.";
+        let msg =
+          "Tab audio capture failed: " +
+          (err && err.message ? err.message : err);
+        if (err && err.name === "NotSupportedError") {
+          msg +=
+            "\n\nYour browser does not support tab audio capture with getDisplayMedia. Try updating your browser, or use a different browser. If you need to capture system audio, consider using a virtual audio cable or set your system audio as the microphone.";
         }
         this.$message.error(msg);
         this.tabVideoVisible = false;

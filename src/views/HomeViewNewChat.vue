@@ -39,6 +39,9 @@ display: block; width: 100%; word-break: break-word; }
                 <option value="python">Python</option>
                 <option value="postgresql">PostgreSQL</option>
                 <option value="mongo">MongoDB</option>
+                <option value="php laravel">Laravel</option>
+                <option value="react">React</option>
+                <option value="angular">Angular</option>
               </select>
             </div>
             <div class="form-check form-switch ms-2">
